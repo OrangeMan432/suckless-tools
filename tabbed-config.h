@@ -4,19 +4,19 @@
 #include "../dwm-pkgbuild/colors.h"
 
 /* appearance */
-static const char font[]        = "JetBrainsMono Nerd Font:size=16";
-static const char* normbgcolor  = col_gray1;
-static const char* normfgcolor  = col_fg1;
-static const char* selbgcolor   = col_bg2;
-static const char* selfgcolor   = col_fg1;
-static const char* urgbgcolor   = col_gray1;
-static const char* urgfgcolor   = "#e67e80";
-static const char before[]      = "<";
-static const char after[]       = ">";
-static const char titletrim[]   = "...";
-static const int  tabwidth      = 200;
-static const Bool foreground    = True;
-static       Bool urgentswitch  = False;
+static const char *font       = "JetBrainsMono Nerd Font:size=16";
+static const char *normbgcolor = col_gray1;
+static const char *normfgcolor = col_fg1;
+static const char *selbgcolor  = col_bg2;
+static const char *selfgcolor  = col_fg1;
+static const char *urgbgcolor  = col_gray1;
+static const char *urgfgcolor  = "#e67e80";
+static const char *before      = "<";
+static const char *after       = ">";
+static const char *titletrim   = "...";
+static int  tabwidth      = 200;
+static int  focusnew      = 1;
+static int  urgentswitch  = 0;
 
 /*
  * Where to place a new tab when it is opened. When npisrelative is True,
@@ -24,7 +24,28 @@ static       Bool urgentswitch  = False;
  * is False, then newposition is an absolute position.
  */
 static int  newposition   = 0;
-static Bool npisrelative  = False;
+static int  npisrelative  = 0;
+
+/*
+ * Xresources preferences to load at startup
+ */
+ResourcePref resources[] = {
+	{ "font",         STRING,  &font},
+	{ "normbgcolor",  STRING,  &normbgcolor},
+	{ "normfgcolor",  STRING,  &normfgcolor},
+	{ "selbgcolor",   STRING,  &selbgcolor},
+	{ "selfgcolor",   STRING,  &selfgcolor},
+	{ "urgbgcolor",   STRING,  &urgbgcolor},
+	{ "urgfgcolor",   STRING,  &urgfgcolor},
+	{ "before",       STRING,  &before},
+	{ "after",        STRING,  &after},
+	{ "titletrim",    STRING,  &titletrim},
+	{ "tabwidth",     INTEGER, &tabwidth},
+	{ "focusnew",     INTEGER, &focusnew},
+	{ "urgentswitch", INTEGER, &urgentswitch},
+	{ "newposition",  INTEGER, &newposition},
+	{ "npisrelative", INTEGER, &npisrelative},
+};
 
 #define SETPROP(p) { \
         .v = (char *[]){ "/bin/sh", "-c", \
