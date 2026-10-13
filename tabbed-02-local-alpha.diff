@@ -1,0 +1,136 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ported locally for suckless-tools PKGBUILD
+Date: Tue, 13 Oct 2026 12:00:00 -0400
+Subject: [PATCH] tabbed alpha (ARGB visual), ported to e65146d stacked on xresources-01
+
+Upstream tabbed alpha patch, ported to the pinned commit on top of the
+local xresources patch. Enables a 32-bit ARGB visual for the tab bar
+(no opacity knob upstream; pixels stay opaque). Adds the missing
+Xrender.h include and links -lXrender via Makefile (pinned tabbed has
+no config.mk).
+
+diff --git a/Makefile b/Makefile
+index d7a2c35..81381cf 100644
+--- a/Makefile
++++ b/Makefile
+@@ -10,7 +10,7 @@ DOCPREFIX = ${PREFIX}/share/doc/${NAME}
+ 
+ # use system flags.
+ TABBED_CFLAGS = -I/usr/X11R6/include -I/usr/include/freetype2 ${CFLAGS}
+-TABBED_LDFLAGS = -L/usr/X11R6/lib -lX11 -lfontconfig -lXft ${LDFLAGS}
++TABBED_LDFLAGS = -L/usr/X11R6/lib -lX11 -lfontconfig -lXft ${LDFLAGS} -lXrender
+ TABBED_CPPFLAGS = -DVERSION=\"${VERSION}\" -D_DEFAULT_SOURCE -D_XOPEN_SOURCE=700L
+ 
+ # OpenBSD (uncomment)
+diff --git a/tabbed.c b/tabbed.c
+index 68c241d..c1b19fc 100644
+--- a/tabbed.c
++++ b/tabbed.c
+@@ -14,6 +14,7 @@
+ #include <X11/keysym.h>
+ #include <X11/Xlib.h>
+ #include <X11/Xproto.h>
++#include <X11/extensions/Xrender.h>
+ #include <X11/Xresource.h>
+ #include <X11/Xutil.h>
+ #include <X11/XKBlib.h>
+@@ -187,6 +188,9 @@ static char **cmd;
+ static char *wmname = "tabbed";
+ static const char *geometry;
+ 
++static Colormap cmap;
++static Visual *visual = NULL;
++
+ char *argv0;
+ 
+ /* configuration, allows nested code to access above variables */
+@@ -288,8 +292,8 @@ configurenotify(const XEvent *e)
+ 		ww = ev->width;
+ 		wh = ev->height;
+ 		XFreePixmap(dpy, dc.drawable);
+-		dc.drawable = XCreatePixmap(dpy, root, ww, wh,
+-		              DefaultDepth(dpy, screen));
++		dc.drawable = XCreatePixmap(dpy, win, ww, wh,
++		              32);
+ 
+ 		if (!obh && (wh <= bh)) {
+ 			obh = bh;
+@@ -441,7 +445,7 @@ drawtext(const char *text, XftColor col[ColLast])
+ 			;
+ 	}
+ 
+-	d = XftDrawCreate(dpy, dc.drawable, DefaultVisual(dpy, screen), DefaultColormap(dpy, screen));
++	d = XftDrawCreate(dpy, dc.drawable, visual, cmap);
+ 	XftDrawStringUtf8(d, &col[ColFG], dc.font.xfont, x, y, (XftChar8 *) buf, len);
+ 	XftDrawDestroy(d);
+ }
+@@ -621,7 +625,7 @@ getcolor(const char *colstr)
+ {
+ 	XftColor color;
+ 
+-	if (!XftColorAllocName(dpy, DefaultVisual(dpy, screen), DefaultColormap(dpy, screen), colstr, &color))
++  if (!XftColorAllocName(dpy, visual, cmap, colstr, &color))
+ 		die("%s: cannot allocate color '%s'\n", argv0, colstr);
+ 
+ 	return color;
+@@ -1123,12 +1127,55 @@ setup(void)
+ 	dc.sel[ColFG] = getcolor(selfgcolor);
+ 	dc.urg[ColBG] = getcolor(urgbgcolor);
+ 	dc.urg[ColFG] = getcolor(urgfgcolor);
+-	dc.drawable = XCreatePixmap(dpy, root, ww, wh,
+-	                            DefaultDepth(dpy, screen));
+-	dc.gc = XCreateGC(dpy, root, 0, 0);
+ 
+-	win = XCreateSimpleWindow(dpy, root, wx, wy, ww, wh, 0,
+-	                          dc.norm[ColFG].pixel, dc.norm[ColBG].pixel);
++	XVisualInfo *vis;
++	XRenderPictFormat *fmt;
++	int nvi;
++	int i;
++
++	XVisualInfo tpl = {
++		.screen = screen,
++		.depth = 32,
++		.class = TrueColor
++	};
++
++	vis = XGetVisualInfo(dpy, VisualScreenMask | VisualDepthMask | VisualClassMask, &tpl, &nvi);
++	for(i = 0; i < nvi; i ++) {
++		fmt = XRenderFindVisualFormat(dpy, vis[i].visual);
++		if (fmt->type == PictTypeDirect && fmt->direct.alphaMask) {
++			visual = vis[i].visual;
++			break;
++		}
++	}
++
++	XFree(vis);
++
++	if (! visual) {
++		fprintf(stderr, "Couldn't find ARGB visual.\n");
++		exit(1);
++	}
++
++	cmap = XCreateColormap( dpy, root, visual, None);
++
++	XSetWindowAttributes attrs;
++	attrs.background_pixel = dc.norm[ColBG].pixel;
++	attrs.border_pixel = dc.norm[ColFG].pixel;
++	attrs.bit_gravity = NorthWestGravity;
++	attrs.event_mask = FocusChangeMask | KeyPressMask
++		| ExposureMask | VisibilityChangeMask | StructureNotifyMask
++		| ButtonMotionMask | ButtonPressMask | ButtonReleaseMask;
++	attrs.background_pixmap = None ;
++	attrs.colormap = cmap;
++
++	win = XCreateWindow(dpy, root, wx, wy,
++	ww, wh, 0, 32, InputOutput,
++	visual, CWBackPixmap | CWBorderPixel | CWBitGravity
++	| CWEventMask | CWColormap, &attrs);
++
++	dc.drawable = XCreatePixmap(dpy, win, ww, wh,
++	                            32);
++	dc.gc = XCreateGC(dpy, dc.drawable, 0, 0);
++
+ 	XMapRaised(dpy, win);
+ 	XSelectInput(dpy, win, SubstructureNotifyMask | FocusChangeMask |
+ 	             ButtonPressMask | ExposureMask | KeyPressMask |
