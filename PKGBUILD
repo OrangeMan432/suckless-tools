@@ -21,7 +21,8 @@ source=(dmenu::git+https://git.suckless.org/dmenu#commit=7175c4880bac3d2a2d4a626
          slock-01-local-xresources.diff
          tabbed-config.h
          tabbed-01-local-xresources.diff
-         tabbed-02-local-alpha.diff)
+         tabbed-02-local-alpha.diff
+         tabbed-03-local-transparency.diff)
 sha256sums=('29cf5354651547eea9aa76c9fe49afbbb10dbcaaffa895ebea5a1426b9f05bf5'
             '5223e51f9e01989a769ab4343dd287a47c831ee5d6d8c845d3e68dc477ca0d18'
             '4f71d910c3b44c909fc599ff3d5a9216d029561138efd52e8fdb156198ae6a39'
@@ -35,7 +36,8 @@ sha256sums=('29cf5354651547eea9aa76c9fe49afbbb10dbcaaffa895ebea5a1426b9f05bf5'
             'a6bff09636e87f5039a4d3c571e1c02e2766a6abae6cbcd5f5d2cc98bc120290'
             '2a51a55de6a8baf64d26dd8d5270131c262f58e9b095da481df3fb32e0bcd685'
             'a6c20e0efc52e11c2d9903aac205c3624cbf3c4eab97e62e189f77229173d57a'
-            '608c1893b9c6fd89b9ff9a401d9b30cdeb0164660d9c098e04bdcf9835496e78')
+            'a0da210d97c318ae41b374314af99c19d2ead5651cfd4ec939b0a32bbeac52b4'
+            'b962509ad8145d530b62803bc29057a0ec2f7bf08bb8d17cd9c3893e81469f2b')
 
 _dmenu_patches=(dmenu-01-local-border-center.diff
                 dmenu-02-local-vi-mode.diff
@@ -44,7 +46,8 @@ _dmenu_patches=(dmenu-01-local-border-center.diff
                 dmenu-05-local-alpha.diff)
 _slock_patches=(slock-01-local-xresources.diff)
 _tabbed_patches=(tabbed-01-local-xresources.diff
-                tabbed-02-local-alpha.diff)
+                tabbed-02-local-alpha.diff
+                tabbed-03-local-transparency.diff)
 
 build() {
   # configs include ../dwm-pkgbuild/colors.h: resolve the sibling repo

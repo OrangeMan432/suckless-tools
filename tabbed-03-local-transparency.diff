@@ -1,0 +1,27 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: local addition for suckless-tools PKGBUILD
+Date: Tue, 13 Oct 2026 12:00:00 -0400
+Subject: [PATCH] tabbed 95% translucent tab backgrounds, on top of 02-alpha
+
+The alpha patch only enables a 32-bit ARGB visual; all pixels stay
+opaque, so nothing looks transparent. Force 0xf2 into the background
+pixels (norm/sel/urg) so tab backgrounds composite at 95% under picom.
+Text stays opaque: Xft renders glyphs from XftColor alpha, not pixel.
+
+diff --git a/tabbed.c b/tabbed.c
+index 8bb5267..61ae422 100644
+--- a/tabbed.c
++++ b/tabbed.c
+@@ -1157,6 +1157,12 @@ setup(void)
+ 	dc.urg[ColBG] = getcolor(urgbgcolor);
+ 	dc.urg[ColFG] = getcolor(urgfgcolor);
+ 
++	/* 95% opacity for tab backgrounds (0xf2, like dmenu/st); text stays
++	 * opaque since Xft renders glyphs from XftColor alpha, not pixel. */
++	dc.norm[ColBG].pixel = (dc.norm[ColBG].pixel & 0x00ffffffU) | (0xf2 << 24);
++	dc.sel[ColBG].pixel = (dc.sel[ColBG].pixel & 0x00ffffffU) | (0xf2 << 24);
++	dc.urg[ColBG].pixel = (dc.urg[ColBG].pixel & 0x00ffffffU) | (0xf2 << 24);
++
+ 	XSetWindowAttributes attrs;
+ 	attrs.background_pixel = dc.norm[ColBG].pixel;
+ 	attrs.border_pixel = dc.norm[ColFG].pixel;
